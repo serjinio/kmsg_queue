@@ -12,7 +12,19 @@ To build go to `src` folder and run `make`
 
 ## Run 
 
-To install module run: `sudo insmod queue.ko` from `src` folder.
+To install module run: 
 
-Once module use is finished run: `sudo rmmod queue`.
+```
+sudo insmod queue.ko
+```
+
+from `src` folder.
+
+Once module use is finished run:
+
+```
+sudo rmmod queue
+```
+
+
 
