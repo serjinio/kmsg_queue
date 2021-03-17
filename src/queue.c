@@ -12,7 +12,7 @@
 #include <asm/uaccess.h>
 
 #define PROCFS_FILE_MODE 0666
-#define MSG_MAX_SIZE	10
+#define MSG_MAX_SIZE	1024
 #define PROCFS_NAME "msg_queue"
 
 MODULE_LICENSE("Dual BSD/GPL");
@@ -68,19 +68,18 @@ static ssize_t procfile_write(struct file *file, const char __user *ubuf, size_t
 
   printk(KERN_INFO "kmsg_queue: procfile_write (/proc/%s) called\n", PROCFS_NAME);
 
-  printk(KERN_INFO "ppos: %llu", *ppos);
   if (*ppos > 0) {
     printk(
            KERN_INFO
            "kmsg_queue: procfile_write(): this is a left-over call to transer user data. "
-           "Currently this module does not support arbitrarily large messages.");
+           "Currently this module does not support arbitrarily large messages.\n");
     *ppos = 0;
     // return count bytes to avoid more calls on this message
     printk(KERN_INFO "kmsg_queue: procfile_write (/proc/%s) finished\n", PROCFS_NAME);
     return count;
   }
 
-  printk(KERN_INFO "kmsg_queue: got message with data buffer of size %zu ", count);
+  printk(KERN_INFO "kmsg_queue: got message with data buffer of size %zu\n", count);
 
   buffer_size = count;
   if (buffer_size > MSG_MAX_SIZE ) {
@@ -90,7 +89,7 @@ static ssize_t procfile_write(struct file *file, const char __user *ubuf, size_t
       (KERN_INFO
        "kmsg_queue: size of the input user message is %zu "
        "which is larger than the allowed max size: %u. "
-       "User message will be truncated.",
+       "User message will be truncated.\n",
        count, MSG_MAX_SIZE);
   }
   buffer_size_bytes = sizeof(*(new_msg->buf)) * buffer_size;
@@ -109,7 +108,7 @@ static ssize_t procfile_write(struct file *file, const char __user *ubuf, size_t
 
   // if all went well, then just insert new message to our list
   list_add_tail(&new_msg->list, &msg_list);
-  printk(KERN_INFO "kmsg_queue: added new user message to linked list: %s", new_msg->buf);
+  printk(KERN_INFO "kmsg_queue: added new user message to linked list: %s\n", new_msg->buf);
 
   printk(KERN_INFO "kmsg_queue: procfile_write (/proc/%s) finished\n", PROCFS_NAME);
   *ppos = buffer_size_bytes;
@@ -125,7 +124,7 @@ static ssize_t procfile_read(struct file *file, char __user *ubuf, size_t count,
   printk(KERN_INFO "kmsg_queue: procfile_read (/proc/%s) called\n", PROCFS_NAME);
   printk
     (KERN_INFO
-     "kmsg_queue: max number of bytes to return (count arg value): %zu",
+     "kmsg_queue: max number of bytes to return (count arg value): %zu\n",
      count);
 
   if (msg_list.next == &msg_list) {
@@ -154,7 +153,7 @@ static ssize_t procfile_read(struct file *file, char __user *ubuf, size_t count,
     buffer_size = count;
     printk(KERN_INFO
            "kmsg_queue: Stored message (%zu bytes) is larger than the "
-           "user buffer (%zu bytes). Message will be truncated.",
+           "user buffer (%zu bytes). Message will be truncated.\n",
            user_msg->size, count);
   }
 
@@ -194,8 +193,23 @@ static int init(void)
   return 0;
 }
 
+/*
+ * Function cleans-up all left-over resources and deregisters procfs file.
+ */
 static void cleanup(void)
 {
+  struct user_message* user_msg;
+
+  printk(KERN_INFO "kmsg_queue: entering cleanup()\n");
+
+  while(msg_list.next != &msg_list) {
+    user_msg = container_of(msg_list.next, struct user_message, list);
+    list_del(&user_msg->list);
+    printk(KERN_INFO "kmsg_queue: removed message of size %zu\n", user_msg->size);
+    user_message_free(user_msg);
+  }
+
+  printk(KERN_INFO "kmsg_queue: cleanup() finished\n");
   proc_remove(procfs_entry);
 }
 

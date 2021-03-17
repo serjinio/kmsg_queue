@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 
 insert_msg() {
@@ -11,10 +11,9 @@ get_msg() {
     echo "<MSG DELIM>"
 }
 
-cd src
-make
+# ./build.sh
 
-sudo insmod queue.ko
+sudo insmod bin/queue.ko
 
 insert_msg "hello 1000000"
 insert_msg "hello 2"
