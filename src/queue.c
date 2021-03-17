@@ -177,7 +177,7 @@ int	procfile_open(struct inode *inode, struct file *file) {
 
 int	procfile_release(struct inode *inode, struct file *file) {
   module_put(THIS_MODULE);
-  return 0;		/* success */
+  return 0;
 }
 
 static struct proc_ops proc_file_ops =
