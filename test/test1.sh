@@ -8,6 +8,7 @@ insert_msg() {
 
 get_msg() {
     cat /proc/msg_queue
+    echo "<MSG DELIM>"
 }
 
 cd src
@@ -15,7 +16,7 @@ make
 
 sudo insmod queue.ko
 
-insert_msg "hello 1"
+insert_msg "hello 1000000"
 insert_msg "hello 2"
 insert_msg "hello 3"
 
@@ -25,7 +26,7 @@ get_msg
 get_msg
 get_msg
 
-echo "Now queue should be empty (nothing after this message)"
+echo "Now queue should be empty (no data after this message)"
 
 get_msg
 

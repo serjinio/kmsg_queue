@@ -72,7 +72,7 @@ static ssize_t procfile_write(struct file *file, const char __user *ubuf, size_t
   if (*ppos > 0) {
     printk(
            KERN_INFO
-           "kmsg_queue: this is a left-over call to transer user data. "
+           "kmsg_queue: procfile_write(): this is a left-over call to transer user data. "
            "Currently this module does not support arbitrarily large messages.");
     *ppos = 0;
     // return count bytes to avoid more calls on this message
@@ -137,7 +137,7 @@ static ssize_t procfile_read(struct file *file, char __user *ubuf, size_t count,
   if (*ppos > 0) {
     printk(
            KERN_INFO
-           "kmsg_queue: this is a left-over call to transer user data. "
+           "kmsg_queue: procfile_read(): this is a left-over call to transer user data. "
            "Currently this module does not support arbitrarily large messages.");
     printk(KERN_INFO "kmsg_queue: ppos = %llu. procfile_read finished.\n", *ppos);
     return 0;
@@ -158,17 +158,16 @@ static ssize_t procfile_read(struct file *file, char __user *ubuf, size_t count,
            user_msg->size, count);
   }
 
-
   /* fill the user buffer */
   memcpy(ubuf, user_msg->buf, buffer_size);
-  *ppos = user_msg->size;
+  *ppos = buffer_size;
   /*  remove list entry and deallocate the user_message object */
   list_del(&user_msg->list);
   user_message_free(user_msg);
 
   /*  return the number of bytes written to user buffer */
   printk(KERN_INFO "kmsg_queue: procfile_read (/proc/%s) finished\n", PROCFS_NAME);
-  return user_msg->size;
+  return buffer_size;
 }
 
 int	procfile_open(struct inode *inode, struct file *file) {
