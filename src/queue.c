@@ -9,10 +9,11 @@
 #include <linux/proc_fs.h>
 #include <linux/slab.h>
 #include <linux/list.h>
+#include <linux/spinlock.h>
 #include <asm/uaccess.h>
 
 #define PROCFS_FILE_MODE 0666
-#define MSG_MAX_SIZE	1024
+#define MSG_MAX_SIZE 1024
 #define PROCFS_NAME "msg_queue"
 
 MODULE_LICENSE("Dual BSD/GPL");
@@ -39,6 +40,11 @@ struct user_message {
 static LIST_HEAD(msg_list);
 
 /**
+ * Spinlock for the msg_list
+ */
+static DEFINE_SPINLOCK(msg_list_lock);
+
+/**
  * Constructor for user message objects
  */
 struct user_message* user_message_construct(size_t msg_size) {
@@ -60,6 +66,38 @@ void user_message_free(struct user_message* user_msg) {
   kfree(user_msg);
 }
 
+/**
+ * Adds new user message to the tail of the list
+ */
+void user_message_list_add_tail(struct user_message* msg, struct list_head* head) {
+  spin_lock(&msg_list_lock);
+  list_add_tail(&msg->list, head);
+  spin_unlock(&msg_list_lock);
+  printk(KERN_INFO "kmsg_queue: added new user message to linked list: %s \n", msg->buf);
+}
+
+/**
+ * Removes user_message from the top of the list and returns it
+ */
+struct user_message* user_message_list_pop(struct list_head* head) {
+  struct user_message* user_msg;
+
+  // take a lock before inspecting the linked list
+  spin_lock(&msg_list_lock);
+
+  if (head->next == head) {
+    // release lock and return null if the list is empty
+    spin_unlock(&msg_list_lock);
+    return NULL;
+  }
+
+  user_msg = container_of(head->next, struct user_message, list);
+  list_del(&user_msg->list);
+
+  // release lock and return result
+  spin_unlock(&msg_list_lock);
+  return user_msg;
+}
 
 static ssize_t procfile_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)
 {
@@ -107,8 +145,7 @@ static ssize_t procfile_write(struct file *file, const char __user *ubuf, size_t
   }
 
   // if all went well, then just insert new message to our list
-  list_add_tail(&new_msg->list, &msg_list);
-  printk(KERN_INFO "kmsg_queue: added new user message to linked list: %s\n", new_msg->buf);
+  user_message_list_add_tail(new_msg, &msg_list);
 
   printk(KERN_INFO "kmsg_queue: procfile_write (/proc/%s) finished\n", PROCFS_NAME);
   *ppos = buffer_size_bytes;
@@ -127,12 +164,6 @@ static ssize_t procfile_read(struct file *file, char __user *ubuf, size_t count,
      "kmsg_queue: max number of bytes to return (count arg value): %zu\n",
      count);
 
-  if (msg_list.next == &msg_list) {
-    printk(KERN_INFO "kmsg_queue: messages list is empty nothing to read");
-    printk(KERN_INFO "kmsg_queue: procfile_read (/proc/%s) finished\n", PROCFS_NAME);
-    return 0;
-  }
-
   if (*ppos > 0) {
     printk(
            KERN_INFO
@@ -143,7 +174,13 @@ static ssize_t procfile_read(struct file *file, char __user *ubuf, size_t count,
   }
 
   // extract list entry from list_head structure
-  user_msg = container_of(msg_list.next, struct user_message, list);
+  user_msg = user_message_list_pop(&msg_list);
+  if (user_msg == NULL) {
+    printk(KERN_INFO "kmsg_queue: messages list is empty nothing to read");
+    printk(KERN_INFO "kmsg_queue: procfile_read (/proc/%s) finished\n", PROCFS_NAME);
+    return 0;
+  }
+
   printk(KERN_INFO
          "kmsg_queue: returning user message of size %zu; content: %s",
          user_msg->size, user_msg->buf);
@@ -160,8 +197,7 @@ static ssize_t procfile_read(struct file *file, char __user *ubuf, size_t count,
   /* fill the user buffer */
   memcpy(ubuf, user_msg->buf, buffer_size);
   *ppos = buffer_size;
-  /*  remove list entry and deallocate the user_message object */
-  list_del(&user_msg->list);
+  /* deallocate the user_message object */
   user_message_free(user_msg);
 
   /*  return the number of bytes written to user buffer */
@@ -189,7 +225,11 @@ static struct proc_ops proc_file_ops =
 
 static int init(void)
 {
+  printk(KERN_INFO "kmsg_queue: entering init()\n");
+
   procfs_entry = proc_create(PROCFS_NAME, PROCFS_FILE_MODE, NULL, &proc_file_ops);
+
+  printk(KERN_INFO "kmsg_queue: init() finished\n");
   return 0;
 }
 

@@ -12,6 +12,13 @@ To build go to `src` folder and run `make`.
 Also can use `build.sh` warpper script which makes the same actions 
 and additionally copies kernel module object to `bin` folder.
 
+### Adjustable parameters
+
+There are several `define ...` constants that could be changed in `queue.c`.
+
+Change `MSG_MAX_SIZE` to set maximum allowed message size.
+Change `PROCFS_NAME` to set the name of the file used in `/proc/` folder.
+
 ## Manual run 
 
 To install module run: 

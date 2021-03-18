@@ -15,7 +15,7 @@ get_msg() {
 
 sudo insmod bin/queue.ko
 
-insert_msg "hello 1000000"
+insert_msg "hello 1"
 insert_msg "hello 2"
 insert_msg "hello 3"
 
