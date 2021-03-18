@@ -62,18 +62,19 @@ hello 3
 Run from project root:
 
 ```
-test/test1.sh
+test/test_insert_and_pop.sh
 ```
 
 Sample shell session output:
 
 ```
-➜  kmsg_queue git:(kmsg_module_impl1) ✗ test/test1.sh 
-Sending message: hello 1000000
+➜  kmsg_queue git:(kmsg_module_impl1) ✗ test/test_insert_and_pop.sh 
+*** Test for simple insert & pop ***
+Sending message: hello 1
 Sending message: hello 2
 Sending message: hello 3
 Should obtain back three messages
-hello 1000000
+hello 1
 <MSG DELIM>
 hello 2
 <MSG DELIM>
@@ -81,6 +82,8 @@ hello 3
 <MSG DELIM>
 Now queue should be empty (no data after this message)
 <MSG DELIM>
+*** END: Test for simple insert & pop ***
 ```
 
+Run other tests to see their output.
 

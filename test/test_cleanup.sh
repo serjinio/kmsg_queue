@@ -13,6 +13,8 @@ get_msg() {
 
 # ./build.sh
 
+echo "*** Test for cleanup of left-over resources on rmmod call ***"
+
 sudo insmod bin/queue.ko
 
 insert_msg "hello 1"
@@ -34,3 +36,5 @@ sudo rmmod queue.ko
 
 echo "Last five lines from kern.log:"
 tail -n 5 /var/log/kern.log
+
+echo "*** END: Test for cleanup of left-over resources on rmmod call ***"

@@ -13,6 +13,8 @@ get_msg() {
 
 # ./build.sh
 
+echo "*** Test for simple insert & pop ***"
+
 sudo insmod bin/queue.ko
 
 insert_msg "hello 1"
@@ -30,3 +32,5 @@ echo "Now queue should be empty (no data after this message)"
 get_msg
 
 sudo rmmod queue.ko
+
+echo "*** END: Test for simple insert & pop ***"
