@@ -99,21 +99,21 @@ struct user_message* user_message_list_pop(struct list_head* head) {
   return user_msg;
 }
 
-static ssize_t procfile_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)
+static ssize_t write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)
 {
   size_t buffer_size, buffer_size_bytes;
   struct user_message* new_msg;
 
-  printk(KERN_INFO "kmsg_queue: procfile_write (/proc/%s) called\n", PROCFS_NAME);
+  printk(KERN_INFO "kmsg_queue: write() (/proc/%s) called\n", PROCFS_NAME);
 
   if (*ppos > 0) {
     printk(
            KERN_INFO
-           "kmsg_queue: procfile_write(): this is a left-over call to transer user data. "
+           "kmsg_queue: write(): this is a left-over call to transer user data. "
            "Currently this module does not support arbitrarily large messages.\n");
     *ppos = 0;
     // return count bytes to avoid more calls on this message
-    printk(KERN_INFO "kmsg_queue: procfile_write (/proc/%s) finished\n", PROCFS_NAME);
+    printk(KERN_INFO "kmsg_queue: write() (/proc/%s) finished\n", PROCFS_NAME);
     return count;
   }
 
@@ -137,7 +137,7 @@ static ssize_t procfile_write(struct file *file, const char __user *ubuf, size_t
 
   /* copy over message data from user space to our buffer in kernel space */
   if ( copy_from_user(new_msg->buf, ubuf, buffer_size_bytes) ) {
-    printk(KERN_INFO "kmsg_queue: procfile_write (/proc/%s) copy_from_user failed\n", PROCFS_NAME);
+    printk(KERN_INFO "kmsg_queue: write() (/proc/%s) copy_from_user failed\n", PROCFS_NAME);
     // free up allocated resources and return
     user_message_free(new_msg);
     *ppos = 0;
@@ -147,18 +147,18 @@ static ssize_t procfile_write(struct file *file, const char __user *ubuf, size_t
   // if all went well, then just insert new message to our list
   user_message_list_add_tail(new_msg, &msg_list);
 
-  printk(KERN_INFO "kmsg_queue: procfile_write (/proc/%s) finished\n", PROCFS_NAME);
+  printk(KERN_INFO "kmsg_queue: write() (/proc/%s) finished\n", PROCFS_NAME);
   *ppos = buffer_size_bytes;
   return buffer_size_bytes;
 }
 
 
-static ssize_t procfile_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
+static ssize_t read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
 {
   struct user_message* user_msg;
   size_t buffer_size;
 
-  printk(KERN_INFO "kmsg_queue: procfile_read (/proc/%s) called\n", PROCFS_NAME);
+  printk(KERN_INFO "kmsg_queue: read() (/proc/%s) called\n", PROCFS_NAME);
   printk
     (KERN_INFO
      "kmsg_queue: max number of bytes to return (count arg value): %zu\n",
@@ -167,9 +167,9 @@ static ssize_t procfile_read(struct file *file, char __user *ubuf, size_t count,
   if (*ppos > 0) {
     printk(
            KERN_INFO
-           "kmsg_queue: procfile_read(): this is a left-over call to transer user data. "
+           "kmsg_queue: read(): this is a left-over call to transer user data. "
            "Currently this module does not support arbitrarily large messages.");
-    printk(KERN_INFO "kmsg_queue: ppos = %llu. procfile_read finished.\n", *ppos);
+    printk(KERN_INFO "kmsg_queue: ppos = %llu. read() finished.\n", *ppos);
     return 0;
   }
 
@@ -177,7 +177,7 @@ static ssize_t procfile_read(struct file *file, char __user *ubuf, size_t count,
   user_msg = user_message_list_pop(&msg_list);
   if (user_msg == NULL) {
     printk(KERN_INFO "kmsg_queue: messages list is empty nothing to read");
-    printk(KERN_INFO "kmsg_queue: procfile_read (/proc/%s) finished\n", PROCFS_NAME);
+    printk(KERN_INFO "kmsg_queue: read() (/proc/%s) finished\n", PROCFS_NAME);
     return 0;
   }
 
@@ -201,26 +201,26 @@ static ssize_t procfile_read(struct file *file, char __user *ubuf, size_t count,
   user_message_free(user_msg);
 
   /*  return the number of bytes written to user buffer */
-  printk(KERN_INFO "kmsg_queue: procfile_read (/proc/%s) finished\n", PROCFS_NAME);
+  printk(KERN_INFO "kmsg_queue: read() (/proc/%s) finished\n", PROCFS_NAME);
   return buffer_size;
 }
 
-int	procfile_open(struct inode *inode, struct file *file) {
+int	open(struct inode *inode, struct file *file) {
   try_module_get(THIS_MODULE);
   return 0;
 }
 
-int	procfile_release(struct inode *inode, struct file *file) {
+int	release(struct inode *inode, struct file *file) {
   module_put(THIS_MODULE);
   return 0;
 }
 
 static struct proc_ops proc_file_ops =
   {
-   .proc_read = procfile_read,
-   .proc_write = procfile_write,
-   .proc_open = procfile_open,
-   .proc_release = procfile_release
+   .proc_read = read,
+   .proc_write = write,
+   .proc_open = open,
+   .proc_release = release
   };
 
 static int init(void)
