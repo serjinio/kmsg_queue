@@ -5,6 +5,9 @@ Supports text messages writing to and reading from the file object.
 Messages are kept in a linked list structure which mimics FIFO queue.
 On reading the first message which entered the queue will appear first on output.
 
+Operations on linked list are guarded by a spinlock. 
+The module code could be used by multiple clients 
+for simultaneous reading & writing.
 
 ## Build 
 
@@ -14,11 +17,11 @@ and additionally copies kernel module object to `bin` folder.
 
 ### Adjustable parameters
 
-There are several `define ...` constants that could be changed in `queue.c`.
+There are several `define ...` constants that could be changed in `queue.c`:
 
-Change `MSG_MAX_SIZE` to set maximum allowed message size.
-Change `PROCFS_NAME` to set the name of the file used in `/proc/` folder.
-Change `PROCFS_FILE_MODE` to set the access mode of the procfs file.
+- Change `MSG_MAX_SIZE` to set maximum allowed message size.
+- Change `PROCFS_NAME` to set the name of the file used in `/proc/` folder.
+- Change `PROCFS_FILE_MODE` to set the access mode of the procfs file.
 
 ## Manual run 
 
@@ -87,8 +90,6 @@ Now queue should be empty (no data after this message)
 <MSG DELIM>
 *** END: Test for simple insert & pop ***
 ```
-
-Run other tests to see their output.
 
 ### Queue cleanup
 
@@ -188,4 +189,102 @@ Mar 19 16:43:43 ubu kernel: [ 1996.946357] kmsg_queue: cleanup() finished
 ```
 
 Number of message that are sent to the queue can be edited in test sources.
+
+### Test for parallel insert
+
+Builds several (20) clients that simultaneously populate the queue.
+Then builds a single client that reads from the queue.
+
+Logs of reading out messages by a single client: 
+
+```
+➜  kmsg_queue git:(kmsg_module_impl1) ✗ test/test_parallel_ops.sh
+...
+client #12: Msg #73
+client #12: Msg #74
+client #8: Msg #2  
+client #12: Msg #75
+client #8: Msg #3  
+client #8: Msg #4  
+client #12: Msg #76
+client #8: Msg #5  
+client #12: Msg #77
+client #12: Msg #78
+client #8: Msg #6  
+client #8: Msg #7  
+client #12: Msg #79
+client #8: Msg #8  
+client #12: Msg #80
+client #8: Msg #9  
+client #12: Msg #81
+client #8: Msg #10 
+client #8: Msg #11 
+client #12: Msg #82
+client #8: Msg #12 
+client #12: Msg #83
+client #8: Msg #13 
+client #12: Msg #84
+client #8: Msg #14 
+client #12: Msg #85
+client #8: Msg #15 
+client #8: Msg #16 
+client #12: Msg #86
+...
+```
+
+Simultaneous inserts do not corrupt the queue.
+
+### Test for parallel readout
+
+Builds a single client that populates the queue with 2000 messages.
+Then builds several (100) clients that simultaneously read from the queue.
+
+Logs of queue readout: 
+
+```
+➜  kmsg_queue git:(kmsg_module_impl1) ✗ test/test_parallel_ops.sh
+...
+client #1: Msg #599 
+client #1: Msg #730 
+client #1: Msg #600 
+client #1: Msg #601 
+client #1: Msg #602 
+client #1: Msg #603 
+client #1: Msg #731 
+client #1: Msg #604 
+client #1: Msg #605 
+client #1: Msg #606 
+client #1: Msg #607 
+client #1: Msg #608 
+client #1: Msg #609 
+client #1: Msg #610 
+client #1: Msg #611 
+client #1: Msg #732 
+client #1: Msg #612 
+client #1: Msg #613 
+client #1: Msg #614 
+client #1: Msg #615 
+client #1: Msg #616 
+client #1: Msg #617 
+client #1: Msg #618 
+client #1: Msg #625 
+client #1: Msg #734 
+client #1: Msg #626 
+client #1: Msg #627 
+client #1: Msg #628 
+client #1: Msg #630 
+client #1: Msg #629 
+client #1: Msg #631 
+client #1: Msg #632 
+client #1: Msg #633 
+client #1: Msg #735 
+client #1: Msg #634 
+client #1: Msg #635 
+client #1: Msg #736
+...
+```
+
+Readout sequence of messages is interleaved as read happens 
+in parallel by multiple clients. 
+Parallel reads do not corrupt the queue.
 
