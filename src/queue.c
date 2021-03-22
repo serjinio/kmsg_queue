@@ -220,12 +220,16 @@ static ssize_t read(struct file *file, char __user *ubuf, size_t count, loff_t *
 }
 
 int	open(struct inode *inode, struct file *file) {
+  printk(KERN_INFO "kmsg_queue: entered open()");
   try_module_get(THIS_MODULE);
+  printk(KERN_INFO "kmsg_queue: open() finished");
   return 0;
 }
 
 int	release(struct inode *inode, struct file *file) {
+  printk(KERN_INFO "kmsg_queue: entered release()");
   module_put(THIS_MODULE);
+  printk(KERN_INFO "kmsg_queue: release() finished");
   return 0;
 }
 
