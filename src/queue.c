@@ -51,7 +51,15 @@ struct user_message* user_message_construct(size_t msg_size) {
   struct user_message* new_msg;
 
   new_msg = kmalloc(sizeof(*new_msg), GFP_KERNEL);
+  if (new_msg == NULL) {
+    return NULL;
+  }
   new_msg->buf = kmalloc(msg_size, GFP_KERNEL);
+  if (new_msg->buf == NULL) {
+    kfree(new_msg);
+    return NULL;
+  }
+
   new_msg->size = msg_size;
   INIT_LIST_HEAD(&new_msg->list);
 
@@ -134,6 +142,12 @@ static ssize_t write(struct file *file, const char __user *ubuf, size_t count, l
 
   // allocate memory buffer to hold the user message
   new_msg = user_message_construct(buffer_size_bytes);
+  if (new_msg == NULL) {
+    printk(KERN_WARNING
+           "kmsg_queue: Cannot allocate memory for new user message. "
+           "This message cannot be added to the queue!");
+    return -EFAULT;
+  }
 
   /* copy over message data from user space to our buffer in kernel space */
   if ( copy_from_user(new_msg->buf, ubuf, buffer_size_bytes) ) {
@@ -242,9 +256,7 @@ static void cleanup(void)
 
   printk(KERN_INFO "kmsg_queue: entering cleanup()\n");
 
-  while(msg_list.next != &msg_list) {
-    user_msg = container_of(msg_list.next, struct user_message, list);
-    list_del(&user_msg->list);
+  while((user_msg = user_message_list_pop(&msg_list)) != NULL) {
     printk(KERN_INFO "kmsg_queue: removed message of size %zu\n", user_msg->size);
     user_message_free(user_msg);
   }
