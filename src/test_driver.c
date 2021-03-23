@@ -57,11 +57,11 @@ char* read_msg(FILE* msg_stream, size_t buff_sz) {
   return buffer;
 }
 
-void test1() {
+void test_read_write_once() {
   FILE *msg_stream;
   char* msg;
 
-  printf("Test1: will write & read one message...\n");
+  printf("Test write & read one message...\n");
 
   msg_stream = open_msg_queue("w");
   write_msg(msg_stream, "Hello world!");
@@ -78,14 +78,14 @@ void test1() {
   free(msg);
   close_msg_queue(msg_stream);
 
-  printf("Test1: finished\n");
+  printf("Test write & read one message - finished\n");
 }
 
-void test2() {
+void test_read_into_small_buffer() {
   FILE *msg_stream;
   char* msg;
 
-  printf("Test2: read into small buffer...\n");
+  printf("Test read into small buffer...\n");
 
   msg_stream = open_msg_queue("w");
   write_msg(msg_stream, "Hello world!");
@@ -102,15 +102,15 @@ void test2() {
   free(msg);
   close_msg_queue(msg_stream);
 
-  printf("Test2: finished\n");
+  printf("Test read into small buffer - finished\n");
 }
 
-void test3() {
+void test_large_write() {
   FILE *msg_stream;
   char *read_buf, *write_buf;
   int i;
 
-  printf("Test3: write 100,000 messages...\n");
+  printf("Test write 100,000 messages...\n");
 
   write_buf = calloc(255, sizeof(char));
 
@@ -138,7 +138,24 @@ void test3() {
 
   free(write_buf);
 
-  printf("Test3: finished\n");
+  printf("Test write 100,000 messages - finished\n");
+}
+
+void test_read_from_empty_queue() {
+  FILE *msg_stream;
+  char *read_buf;
+
+  printf("Test read from an empty queue...\n");
+
+  msg_stream = open_msg_queue("r");
+  read_buf = read_msg(msg_stream, MSG_MAX_SIZE);
+  if (strlen(read_buf) > 0) {
+    printf("Queue must be empty!");
+    exit(1);
+  }
+  free(read_buf);
+
+  printf("Test read from an empty queue - finished\n");
 }
 
 
@@ -180,7 +197,7 @@ void* get_message_batch(void *ptr) {
 
 }
 
-void test4() {
+void test_parallel_insert() {
   int threads_num, batch_size;
   pthread_t threads[10];
   struct writer_info writer_infos[10], *info_ptr;
@@ -189,7 +206,7 @@ void test4() {
   FILE *msg_stream;
   char *read_buf;
 
-  printf("Test4: Multiple threads insert messages...\n");
+  printf("Test parallel insert...\n");
 
   threads_num = 10;
   batch_size = 1000;
@@ -217,15 +234,16 @@ void test4() {
     close_msg_queue(msg_stream);
   }
 
-  printf("Test4: finished\n");
+  printf("Test parallel insert - finished\n");
 }
 
 int main()
 {
-  test1();
-  test2();
-  test3();
-  test4();
+  test_read_from_empty_queue();
+  test_read_write_once();
+  test_read_into_small_buffer();
+  test_large_write();
+  test_parallel_insert();
 
   return 0;
 }

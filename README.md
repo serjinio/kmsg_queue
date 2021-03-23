@@ -64,8 +64,48 @@ hello 3
 ## Tests
 
 There are two types of tests: 
-- bash scripts test drivers
 - C driver
+- bash scripts test drivers
+
+### C test driver program
+
+Sample run: 
+
+```
+➜  kmsg_queue git:(c_test_driver) ✗ test/run_test_driver.sh
+*** Running C test driver ***
+Test read from an empty queue...
+Test read from an empty queue - finished
+Test write & read one message...
+Test write & read one message - finished
+Test read into small buffer...
+Test read into small buffer - finished
+Test write 100,000 messages...
+Test write 100,000 messages - finished
+Test parallel insert...
+writer #0 staring to write batch of size 1000...
+writer #1 staring to write batch of size 1000...
+writer #9 staring to write batch of size 1000...
+writer #4 staring to write batch of size 1000...
+writer #8 staring to write batch of size 1000...
+writer #7 staring to write batch of size 1000...
+writer #6 staring to write batch of size 1000...
+writer #5 staring to write batch of size 1000...
+writer #3 staring to write batch of size 1000...
+writer #2 staring to write batch of size 1000...
+writer #4 finished writing batch of size 1000
+writer #1 finished writing batch of size 1000
+writer #7 finished writing batch of size 1000
+writer #5 finished writing batch of size 1000
+writer #8 finished writing batch of size 1000
+writer #2 finished writing batch of size 1000
+writer #3 finished writing batch of size 1000
+writer #9 finished writing batch of size 1000
+writer #0 finished writing batch of size 1000
+writer #6 finished writing batch of size 1000
+Test parallel insert - finished
+*** END: Running C test driver ***
+```
 
 ### Bash scripts tests
 
@@ -293,20 +333,3 @@ client #1: Msg #736
 Readout sequence of messages is interleaved as read happens 
 in parallel by multiple clients. 
 Parallel reads do not corrupt the queue.
-
-
-### C test driver program
-
-Sample run: 
-
-```
-➜  kmsg_queue git:(main) ✗ test/run_test_driver.sh
-*** Running C test driver ***
-Test1: will write & read one message...
-Test1: finished
-Test2: read into small buffer...
-Test2: finished
-Test3: write 100,000 messages...
-Test3: finished
-*** END: Running C test driver ***
-```
