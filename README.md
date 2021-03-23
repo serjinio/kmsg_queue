@@ -11,9 +11,8 @@ for simultaneous reading & writing.
 
 ## Build 
 
-To build go to `src` folder and run `make`. 
-Also can use `build.sh` warpper script which makes the same actions 
-and additionally copies kernel module object to `bin` folder.
+Use `build.sh` warpper script which calls `make` in the `src` folder
+and copies executables to `bin` folder.
 
 ### Adjustable parameters
 
@@ -25,13 +24,11 @@ There are several `define ...` constants that could be changed in `comdefs.h`:
 
 ## Manual run 
 
-To install module run: 
+To install the module after build run from project root: 
 
 ```
-sudo insmod queue.ko
+sudo insmod bin/queue.ko
 ```
-
-from `src` folder.
 
 Once module use is finished run:
 
@@ -106,6 +103,9 @@ writer #6 finished writing batch of size 1000
 Test parallel insert - finished
 *** END: Running C test driver ***
 ```
+
+To get information on what gets checked during the tests 
+see the test driver sources.
 
 ### Bash scripts tests
 
