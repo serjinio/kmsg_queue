@@ -17,7 +17,7 @@ and additionally copies kernel module object to `bin` folder.
 
 ### Adjustable parameters
 
-There are several `define ...` constants that could be changed in `comdefs.h`:
+There are several `define ...` constants that could be changed in `queue.c`:
 
 - Change `MSG_MAX_SIZE` to set maximum allowed message size.
 - Change `PROCFS_NAME` to set the name of the file used in `/proc/` folder.
@@ -63,13 +63,7 @@ hello 3
 
 ## Tests
 
-There are two types of tests: 
-- bash scripts test drivers
-- C driver
-
-### Bash scripts tests
-
-#### Queue insert & pop
+### Queue insert & pop
 
 Run from project root:
 
@@ -97,7 +91,7 @@ Now queue should be empty (no data after this message)
 *** END: Test for simple insert & pop ***
 ```
 
-#### Queue cleanup
+### Queue cleanup
 
 ```
 ➜  kmsg_queue git:(kmsg_module_impl1) ✗ ./test/test_cleanup.sh 
@@ -125,7 +119,7 @@ Mar 19 16:42:08 ubu kernel: [ 1901.771409] kmsg_queue: cleanup() finished
 *** END: Test for cleanup of left-over resources on rmmod call ***
 ```
 
-#### Queue cleanup with large amount of messages
+### Queue cleanup with large amount of messages
 
 
 ```
@@ -196,7 +190,7 @@ Mar 19 16:43:43 ubu kernel: [ 1996.946357] kmsg_queue: cleanup() finished
 
 Number of message that are sent to the queue can be edited in test sources.
 
-#### Test for parallel insert
+### Test for parallel insert
 
 Builds several (20) clients that simultaneously populate the queue.
 Then builds a single client that reads from the queue.
@@ -240,7 +234,7 @@ client #12: Msg #86
 
 Simultaneous inserts do not corrupt the queue.
 
-#### Test for parallel readout
+### Test for parallel readout
 
 Builds a single client that populates the queue with 2000 messages.
 Then builds several (100) clients that simultaneously read from the queue.
@@ -294,19 +288,3 @@ Readout sequence of messages is interleaved as read happens
 in parallel by multiple clients. 
 Parallel reads do not corrupt the queue.
 
-
-### C test driver program
-
-Sample run: 
-
-```
-➜  kmsg_queue git:(main) ✗ test/run_test_driver.sh
-*** Running C test driver ***
-Test1: will write & read one message...
-Test1: finished
-Test2: read into small buffer...
-Test2: finished
-Test3: write 100,000 messages...
-Test3: finished
-*** END: Running C test driver ***
-```

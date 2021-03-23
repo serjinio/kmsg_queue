@@ -10,4 +10,3 @@ popd
 pwd
 mkdir -p bin
 cp src/queue.ko bin/queue.ko
-cp src/test_driver bin/test_driver
