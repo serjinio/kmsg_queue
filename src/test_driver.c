@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+#include <unistd.h>
 
 #include "comdefs.h"
 
@@ -37,7 +39,7 @@ char* read_msg(FILE* msg_stream, size_t buff_sz) {
   char* buffer;
   int retcode;
 
-  buffer = malloc(sizeof(char) * buff_sz);
+  buffer = calloc(buff_sz, sizeof(char));
   if (buffer == NULL) {
     printf("Failed to allocate read buffer!\n");
     exit(1);
@@ -110,7 +112,7 @@ void test3() {
 
   printf("Test3: write 100,000 messages...\n");
 
-  write_buf = malloc(sizeof(char) * 255);
+  write_buf = calloc(255, sizeof(char));
 
   for (i = 0; i < 100000; i++) {
     sprintf(write_buf, "Hello world #%d", i);
@@ -119,7 +121,6 @@ void test3() {
     close_msg_queue(msg_stream);
   }
 
-  // read into a small buffer
   for (i = 0; i < 100000; i++) {
     msg_stream = open_msg_queue("r");
     read_buf = read_msg(msg_stream, MSG_MAX_SIZE);
@@ -140,11 +141,91 @@ void test3() {
   printf("Test3: finished\n");
 }
 
+
+struct writer_info {
+  char* name;
+  size_t batch_size;
+};
+
+
+struct reader_info {
+  char *name;
+  size_t batch_size;
+};
+
+
+void* put_message_batch(void *ptr) {
+  FILE *msg_stream;
+  char *read_buf, *write_buf;
+  int i;
+  struct writer_info *info;
+
+  info = (struct writer_info*) ptr;
+
+  printf("%s staring to write batch of size %ld...\n", info->name, info->batch_size);
+
+  write_buf = calloc(255, sizeof(char));
+
+  for (i = 0; i < info->batch_size; i++) {
+    sprintf(write_buf, "%s: Hello world #%d", info->name, i);
+    msg_stream = open_msg_queue("w");
+    write_msg(msg_stream, write_buf);
+    close_msg_queue(msg_stream);
+  }
+
+  printf("%s finished writing batch of size %ld\n", info->name, info->batch_size);
+}
+
+void* get_message_batch(void *ptr) {
+
+}
+
+void test4() {
+  int threads_num, batch_size;
+  pthread_t threads[10];
+  struct writer_info writer_infos[10], *info_ptr;
+  int i;
+
+  FILE *msg_stream;
+  char *read_buf;
+
+  printf("Test4: Multiple threads insert messages...\n");
+
+  threads_num = 10;
+  batch_size = 1000;
+
+  for (i = 0; i < threads_num; i++) {
+    info_ptr = &writer_infos[i];
+    info_ptr->name = calloc(255, sizeof(char));
+    sprintf(info_ptr->name, "writer #%d", i);
+    info_ptr->batch_size = batch_size;
+    pthread_create(&threads[i], NULL, put_message_batch, (void*) info_ptr);
+  }
+
+  sleep(2);
+
+  for (i = 0; i < threads_num * (batch_size); i++) {
+    msg_stream = open_msg_queue("r");
+    read_buf = read_msg(msg_stream, MSG_MAX_SIZE);
+    read_buf[strcspn(read_buf, "\n")] = 0;
+    /* printf("Obtained a message from the queue: %s\n", read_buf); */
+    if (strlen(read_buf) == 0) {
+      printf("All messages MUST be non-empty. Queue seems to be corrupted!");
+      exit(1);
+    }
+    free(read_buf);
+    close_msg_queue(msg_stream);
+  }
+
+  printf("Test4: finished\n");
+}
+
 int main()
 {
   test1();
   test2();
   test3();
+  test4();
 
   return 0;
 }
