@@ -11,13 +11,12 @@ for simultaneous reading & writing.
 
 ## Build 
 
-To build go to `src` folder and run `make`. 
-Also can use `build.sh` warpper script which makes the same actions 
-and additionally copies kernel module object to `bin` folder.
+Use `build.sh` warpper script which calls `make` in the `src` folder
+and copies executables to `bin` folder.
 
 ### Adjustable parameters
 
-There are several `define ...` constants that could be changed in `queue.c`:
+There are several `define ...` constants that could be changed in `comdefs.h`:
 
 - Change `MSG_MAX_SIZE` to set maximum allowed message size.
 - Change `PROCFS_NAME` to set the name of the file used in `/proc/` folder.
@@ -25,13 +24,11 @@ There are several `define ...` constants that could be changed in `queue.c`:
 
 ## Manual run 
 
-To install module run: 
+To install the module after build run from project root: 
 
 ```
-sudo insmod queue.ko
+sudo insmod bin/queue.ko
 ```
-
-from `src` folder.
 
 Once module use is finished run:
 
@@ -63,7 +60,56 @@ hello 3
 
 ## Tests
 
-### Queue insert & pop
+There are two types of tests: 
+- C driver
+- bash scripts test drivers
+
+### C test driver program
+
+Sample run: 
+
+```
+➜  kmsg_queue git:(c_test_driver) ✗ test/run_test_driver.sh
+*** Running C test driver ***
+Test read from an empty queue...
+Test read from an empty queue - finished
+Test write & read one message...
+Test write & read one message - finished
+Test read into small buffer...
+Test read into small buffer - finished
+Test write 100,000 messages...
+Test write 100,000 messages - finished
+Test parallel insert...
+writer #0 staring to write batch of size 1000...
+writer #1 staring to write batch of size 1000...
+writer #9 staring to write batch of size 1000...
+writer #4 staring to write batch of size 1000...
+writer #8 staring to write batch of size 1000...
+writer #7 staring to write batch of size 1000...
+writer #6 staring to write batch of size 1000...
+writer #5 staring to write batch of size 1000...
+writer #3 staring to write batch of size 1000...
+writer #2 staring to write batch of size 1000...
+writer #4 finished writing batch of size 1000
+writer #1 finished writing batch of size 1000
+writer #7 finished writing batch of size 1000
+writer #5 finished writing batch of size 1000
+writer #8 finished writing batch of size 1000
+writer #2 finished writing batch of size 1000
+writer #3 finished writing batch of size 1000
+writer #9 finished writing batch of size 1000
+writer #0 finished writing batch of size 1000
+writer #6 finished writing batch of size 1000
+Test parallel insert - finished
+*** END: Running C test driver ***
+```
+
+To get information on what gets checked during the tests 
+see the test driver sources.
+
+### Bash scripts tests
+
+#### Queue insert & pop
 
 Run from project root:
 
@@ -91,7 +137,7 @@ Now queue should be empty (no data after this message)
 *** END: Test for simple insert & pop ***
 ```
 
-### Queue cleanup
+#### Queue cleanup
 
 ```
 ➜  kmsg_queue git:(kmsg_module_impl1) ✗ ./test/test_cleanup.sh 
@@ -119,7 +165,7 @@ Mar 19 16:42:08 ubu kernel: [ 1901.771409] kmsg_queue: cleanup() finished
 *** END: Test for cleanup of left-over resources on rmmod call ***
 ```
 
-### Queue cleanup with large amount of messages
+#### Queue cleanup with large amount of messages
 
 
 ```
@@ -190,7 +236,7 @@ Mar 19 16:43:43 ubu kernel: [ 1996.946357] kmsg_queue: cleanup() finished
 
 Number of message that are sent to the queue can be edited in test sources.
 
-### Test for parallel insert
+#### Test for parallel insert
 
 Builds several (20) clients that simultaneously populate the queue.
 Then builds a single client that reads from the queue.
@@ -234,7 +280,7 @@ client #12: Msg #86
 
 Simultaneous inserts do not corrupt the queue.
 
-### Test for parallel readout
+#### Test for parallel readout
 
 Builds a single client that populates the queue with 2000 messages.
 Then builds several (100) clients that simultaneously read from the queue.
@@ -287,4 +333,3 @@ client #1: Msg #736
 Readout sequence of messages is interleaved as read happens 
 in parallel by multiple clients. 
 Parallel reads do not corrupt the queue.
-
